@@ -43,6 +43,12 @@ Available as a command-line utility, a library and a [GitHub Action](https://git
 pacman -S lychee
 ```
 
+### OpenSUSE Tumbleweed
+
+```sh
+zypper in lychee
+```
+
 ### macOS
 
 ```sh
