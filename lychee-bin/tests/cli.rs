@@ -15,7 +15,7 @@ mod cli {
     use http::{Method, StatusCode};
     use lychee_lib::{InputSource, ResponseBody};
     use predicates::{
-        prelude::{predicate, PredicateBooleanExt},
+        prelude::{PredicateBooleanExt, predicate},
         str::{contains, is_empty},
     };
     use pretty_assertions::assert_eq;
@@ -24,7 +24,7 @@ mod cli {
     use serde_json::Value;
     use tempfile::NamedTempFile;
     use uuid::Uuid;
-    use wiremock::{matchers::basic_auth, Mock, ResponseTemplate};
+    use wiremock::{Mock, ResponseTemplate, matchers::basic_auth};
 
     type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -1843,8 +1843,8 @@ mod cli {
             .stderr(contains(
                 "https://github.com/lycheeverse/lychee#non-existent-anchor",
             ))
-            .stdout(contains("27 Total"))
-            .stdout(contains("22 OK"))
+            .stdout(contains("28 Total"))
+            .stdout(contains("23 OK"))
             // 4 failures because of missing fragments
             .stdout(contains("5 Errors"));
     }
