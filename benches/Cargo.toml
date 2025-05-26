@@ -4,12 +4,12 @@ version = "0.0.0"
 authors = ["Matthias Endler <matthias@endler.dev>"]
 license = "Apache-2.0/MIT"
 description = "Criterion benchmarks of the lychee crates"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [dependencies]
 lychee-lib = { path = "../lychee-lib", default-features = false }
-criterion = "0.5.1"
+criterion = "0.6.0"
 
 [features]
 email-check = ["lychee-lib/email-check"]
