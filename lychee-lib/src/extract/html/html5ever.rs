@@ -128,6 +128,11 @@ impl TokenSink for LinkExtractor {
                                     if url.starts_with("/@") || url.starts_with('@') {
                                         return false;
                                     }
+                                    // Skip disabled stylesheets
+                                    // Ref: https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement/disabled
+                                    if attrs.iter().any(|attr| &attr.name.local == "disabled") {
+                                        return false;
+                                    }
                                 }
 
                                 !is_email || (is_mailto && is_href) || (is_phone && is_href)
@@ -169,7 +174,7 @@ impl LinkExtractor {
         attr_name: &str,
         elem_name: &str,
         attr_value: &'a str,
-    ) -> Option<impl Iterator<Item = &'a str>> {
+    ) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
         // For a comprehensive list of elements that might contain URLs/URIs
         // see https://www.w3.org/TR/REC-html40/index/attributes.html
         // and https://html.spec.whatwg.org/multipage/indices.html#attributes-1
@@ -326,6 +331,22 @@ mod tests {
         <script>
         var foo = "https://example.com";
         </script>
+        <a href="https://example.org">i'm fine</a>
+        "#;
+        let expected = vec![RawUri {
+            text: "https://example.org".to_string(),
+            element: Some("a".to_string()),
+            attribute: Some("href".to_string()),
+        }];
+        let uris = extract_html(input, false);
+        assert_eq!(uris, expected);
+    }
+
+    #[test]
+    fn test_exclude_disabled_stylesheet() {
+        let input = r#"
+        <link rel="stylesheet" href="https://disabled.com" disabled>
+        <link rel="stylesheet" href="https://disabled.com" disabled="disabled">
         <a href="https://example.org">i'm fine</a>
         "#;
         let expected = vec![RawUri {

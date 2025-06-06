@@ -9,8 +9,8 @@ use http::StatusCode;
 use lychee_lib::{InputSource, ResponseBody, Status};
 use std::fmt::Write;
 use tabled::{
-    settings::{object::Segment, Alignment, Modify, Style},
     Table, Tabled,
+    settings::{Alignment, Modify, Style, object::Segment},
 };
 
 use crate::stats::ResponseStats;
@@ -154,12 +154,11 @@ impl StatsFormatter for Markdown {
 
 #[cfg(test)]
 mod tests {
-
     use http::StatusCode;
     use lychee_lib::{CacheStatus, InputSource, Response, ResponseBody, Status, Uri};
     use reqwest::Url;
 
-    use crate::archive::Suggestion;
+    use crate::formatters::suggestion::Suggestion;
 
     use super::*;
 
