@@ -1,5 +1,5 @@
-use http::header::{self, HeaderMap};
 use http::StatusCode;
+use http::header::{self, HeaderMap};
 use lychee_lib::{ClientBuilder, Result};
 use regex::RegexSet;
 use reqwest::Method;
@@ -17,10 +17,7 @@ async fn main() -> Result<()> {
     let mut headers = HeaderMap::new();
     headers.insert(header::ACCEPT, "text/html".parse().unwrap());
 
-    let accepted = Some(HashSet::from_iter(vec![
-        StatusCode::OK,
-        StatusCode::NO_CONTENT,
-    ]));
+    let accepted = HashSet::from_iter(vec![StatusCode::OK, StatusCode::NO_CONTENT]);
 
     let client = ClientBuilder::builder()
         .excludes(excludes)

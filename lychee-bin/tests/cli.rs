@@ -15,7 +15,7 @@ mod cli {
     use http::{Method, StatusCode};
     use lychee_lib::{InputSource, ResponseBody};
     use predicates::{
-        prelude::{predicate, PredicateBooleanExt},
+        prelude::{PredicateBooleanExt, predicate},
         str::{contains, is_empty},
     };
     use pretty_assertions::assert_eq;
@@ -24,7 +24,7 @@ mod cli {
     use serde_json::Value;
     use tempfile::NamedTempFile;
     use uuid::Uuid;
-    use wiremock::{matchers::basic_auth, Mock, ResponseTemplate};
+    use wiremock::{Mock, ResponseTemplate, matchers::basic_auth};
 
     type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -562,7 +562,7 @@ mod cli {
             .failure()
             .code(2)
             .stdout(contains(
-                "[404] https://github.com/mre/idiomatic-rust-doesnt-exist-man | Network error: Not Found"
+                r#"[404] https://github.com/mre/idiomatic-rust-doesnt-exist-man | Rejected status code (this depends on your "accept" configuration): Not Found"#
             ))
             .stderr(contains(
                 "There were issues with GitHub URLs. You could try setting a GitHub token and running lychee again.",
@@ -811,6 +811,19 @@ mod cli {
             .success()
             .stdout(contains("1 Total"))
             .stdout(contains("1 OK"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_default_config() -> Result<()> {
+        let test_path = fixtures_path().join("configs");
+        let mut cmd = main_command();
+        cmd.current_dir(test_path)
+            .arg(".")
+            .assert()
+            .failure()
+            .stderr(contains("Cannot load default configuration file"));
 
         Ok(())
     }
@@ -1105,7 +1118,7 @@ mod cli {
                 mock_server_no_content.uri()
             )))
             .stderr(contains(format!(
-                "[429] {}/ | Network error: Too Many Requests\n",
+                "[429] {}/ | Rejected status code (this depends on your \"accept\" configuration): Too Many Requests\n",
                 mock_server_too_many_requests.uri()
             )));
 
@@ -1163,11 +1176,11 @@ mod cli {
             .failure()
             .code(2)
             .stdout(contains(format!(
-                "[418] {}/ | Network error: I\'m a teapot",
+                r#"[418] {}/ | Rejected status code (this depends on your "accept" configuration): I'm a teapot"#,
                 mock_server_teapot.uri()
             )))
             .stdout(contains(format!(
-                "[500] {}/ | Network error: Internal Server Error",
+                r#"[500] {}/ | Rejected status code (this depends on your "accept" configuration): Internal Server Error"#,
                 mock_server_server_error.uri()
             )));
 
@@ -1196,6 +1209,26 @@ mod cli {
 
         // clear the cache file
         fs::remove_file(&cache_file)?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_accept_overrides_defaults_not_additive() -> Result<()> {
+        let mock_server_200 = mock_server!(StatusCode::OK);
+
+        let mut cmd = main_command();
+        cmd.arg("--accept")
+            .arg("404") // ONLY accept 404 - should reject 200 as we overwrite the default
+            .arg("-")
+            .write_stdin(mock_server_200.uri())
+            .assert()
+            .failure()
+            .code(2)
+            .stdout(contains(format!(
+                r#"[200] {}/ | Rejected status code (this depends on your "accept" configuration): OK"#,
+                mock_server_200.uri()
+            )));
 
         Ok(())
     }
@@ -1843,8 +1876,8 @@ mod cli {
             .stderr(contains(
                 "https://github.com/lycheeverse/lychee#non-existent-anchor",
             ))
-            .stdout(contains("27 Total"))
-            .stdout(contains("22 OK"))
+            .stdout(contains("28 Total"))
+            .stdout(contains("23 OK"))
             // 4 failures because of missing fragments
             .stdout(contains("5 Errors"));
     }

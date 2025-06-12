@@ -13,13 +13,13 @@
     clippy::default_trait_access,
     clippy::used_underscore_binding
 )]
-use std::{collections::HashSet, path::Path, sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use http::{
-    header::{HeaderMap, HeaderValue},
     StatusCode,
+    header::{HeaderMap, HeaderValue},
 };
-use log::{debug, warn};
+use log::debug;
 use octocrab::Octocrab;
 use regex::RegexSet;
 use reqwest::{header, redirect, tls};
@@ -28,12 +28,12 @@ use secrecy::{ExposeSecret, SecretString};
 use typed_builder::TypedBuilder;
 
 use crate::{
+    Base, BasicAuthCredentials, ErrorKind, Request, Response, Result, Status, Uri,
     chain::RequestChain,
     checker::{file::FileChecker, mail::MailChecker, website::WebsiteChecker},
     filter::{Excludes, Filter, Includes},
     remap::Remaps,
-    utils::fragment_checker::{FragmentChecker, FragmentInput},
-    Base, BasicAuthCredentials, ErrorKind, Request, Response, Result, Status, Uri,
+    types::DEFAULT_ACCEPTED_STATUS_CODES,
 };
 
 /// Default number of redirects before a request is deemed as failed, 5.
@@ -239,7 +239,8 @@ pub struct ClientBuilder {
     /// Set of accepted return codes / status codes.
     ///
     /// Unmatched return codes/ status codes are deemed as errors.
-    accepted: Option<HashSet<StatusCode>>,
+    #[builder(default = DEFAULT_ACCEPTED_STATUS_CODES.clone())]
+    accepted: HashSet<StatusCode>,
 
     /// Response timeout per request in seconds.
     timeout: Option<Duration>,
@@ -362,7 +363,7 @@ impl ClientBuilder {
             None => builder,
         }
         .build()
-        .map_err(ErrorKind::NetworkRequest)?;
+        .map_err(ErrorKind::BuildRequestClient)?;
 
         let github_client = match self.github_token.as_ref().map(ExposeSecret::expose_secret) {
             Some(token) if !token.is_empty() => Some(
@@ -410,7 +411,6 @@ impl ClientBuilder {
                 self.fallback_extensions,
                 self.include_fragments,
             ),
-            fragment_checker: FragmentChecker::new(),
         })
     }
 }
@@ -435,9 +435,6 @@ pub struct Client {
 
     /// A checker for email URLs.
     email_checker: MailChecker,
-
-    /// Caches Fragments
-    fragment_checker: FragmentChecker,
 }
 
 impl Client {
@@ -535,24 +532,6 @@ impl Client {
     pub async fn check_mail(&self, uri: &Uri) -> Status {
         self.email_checker.check_mail(uri).await
     }
-
-    /// Checks a `file` URI's fragment.
-    pub async fn check_fragment(&self, path: &Path, uri: &Uri) -> Status {
-        match FragmentInput::from_path(path).await {
-            Ok(input) => match self.fragment_checker.check(input, &uri.url).await {
-                Ok(true) => Status::Ok(StatusCode::OK),
-                Ok(false) => ErrorKind::InvalidFragment(uri.clone()).into(),
-                Err(err) => {
-                    warn!("Skipping fragment check due to the following error: {err}");
-                    Status::Ok(StatusCode::OK)
-                }
-            },
-            Err(err) => {
-                warn!("Skipping fragment check due to the following error: {err}");
-                Status::Ok(StatusCode::OK)
-            }
-        }
-    }
 }
 
 /// A shorthand function to check a single URI.
@@ -584,17 +563,17 @@ mod tests {
     };
 
     use async_trait::async_trait;
-    use http::{header::HeaderMap, StatusCode};
+    use http::{StatusCode, header::HeaderMap};
     use reqwest::header;
     use tempfile::tempdir;
     use wiremock::matchers::path;
 
     use super::ClientBuilder;
     use crate::{
+        ErrorKind, Request, Status, Uri,
         chain::{ChainResult, Handler, RequestChain},
         mock_server,
         test_utils::get_mock_client_response,
-        ErrorKind, Request, Status, Uri,
     };
 
     #[tokio::test]

@@ -1,10 +1,10 @@
 use crate::{
+    BasicAuthCredentials, ErrorKind, Status, Uri,
     chain::{Chain, ChainResult, ClientRequestChains, Handler, RequestChain},
     quirks::Quirks,
     retry::RetryExt,
     types::uri::github::GithubUri,
     utils::fragment_checker::{FragmentChecker, FragmentInput},
-    BasicAuthCredentials, ErrorKind, Status, Uri,
 };
 use async_trait::async_trait;
 use http::{Method, StatusCode};
@@ -36,7 +36,7 @@ pub(crate) struct WebsiteChecker {
     /// Set of accepted return codes / status codes.
     ///
     /// Unmatched return codes/ status codes are deemed as errors.
-    accepted: Option<HashSet<StatusCode>>,
+    accepted: HashSet<StatusCode>,
 
     /// Requires using HTTPS when it's available.
     ///
@@ -59,7 +59,7 @@ impl WebsiteChecker {
         retry_wait_time: Duration,
         max_retries: u64,
         reqwest_client: reqwest::Client,
-        accepted: Option<HashSet<StatusCode>>,
+        accepted: HashSet<StatusCode>,
         github_client: Option<Octocrab>,
         require_https: bool,
         plugin_request_chain: RequestChain,
@@ -102,11 +102,12 @@ impl WebsiteChecker {
         let method = request.method().clone();
         match self.reqwest_client.execute(request).await {
             Ok(response) => {
-                let mut status = Status::new(&response, self.accepted.clone());
+                let status = Status::new(&response, &self.accepted);
                 if self.include_fragments && status.is_success() && method == Method::GET {
-                    status = self.check_html_fragment(status, response).await;
+                    self.check_html_fragment(status, response).await
+                } else {
+                    status
                 }
-                status
             }
             Err(e) => e.into(),
         }
@@ -128,7 +129,7 @@ impl WebsiteChecker {
                     .await
                 {
                     Ok(true) => status,
-                    Ok(false) => Status::Error(ErrorKind::InvalidFragment(url.clone().into())),
+                    Ok(false) => Status::Error(ErrorKind::InvalidFragment(url.into())),
                     Err(e) => Status::Error(e),
                 }
             }

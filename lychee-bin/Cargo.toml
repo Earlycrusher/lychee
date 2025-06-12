@@ -4,18 +4,18 @@ authors = ["Matthias Endler <matthias@endler.dev>"]
 description = "A fast, async link checker"
 documentation = "https://docs.rs/lychee"
 homepage = "https://github.com/lycheeverse/lychee"
-edition = "2021"
+edition = "2024"
 keywords = ["link", "checker", "cli", "link-checker", "validator"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/lycheeverse/lychee"
 readme = "../README.md"
 version.workspace = true
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 
 [dependencies]
 # NOTE: We need to specify the version of lychee-lib here because crates.io
 # requires all dependencies to have a version number.
-lychee-lib = { path = "../lychee-lib", version = "0.18.1", default-features = false }
+lychee-lib = { path = "../lychee-lib", version = "0.19.0", default-features = false }
 
 anyhow = "1.0.98"
 assert-json-diff = "2.0.2"
@@ -53,7 +53,7 @@ serde_json = "1.0.140"
 strum = { version = "0.27.1", features = ["derive"] }
 supports-color = "3.0.2"
 tabled = "0.19.0"
-tokio = { version = "1.45.0", features = ["full"] }
+tokio = { version = "1.45.1", features = ["full"] }
 tokio-stream = "0.1.17"
 toml = "0.8.22"
 url = "2.5.4"
@@ -70,7 +70,7 @@ tracing-subscriber = { version = "0.3.19", default-features = false, features = 
     "registry",
     "env-filter",
 ] }
-uuid = { version = "1.16.0", features = ["v4"] }
+uuid = { version = "1.17.0", features = ["v4"] }
 wiremock = "0.6.3"
 
 [features]

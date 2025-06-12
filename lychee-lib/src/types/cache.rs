@@ -76,12 +76,13 @@ impl From<&Status> for CacheStatus {
             Status::Redirected(code) => Self::Error(Some(code.as_u16())),
             Status::Timeout(code) => Self::Error(code.map(|code| code.as_u16())),
             Status::Error(e) => match e {
-                ErrorKind::NetworkRequest(e)
-                | ErrorKind::ReadResponseBody(e)
-                | ErrorKind::BuildRequestClient(e) => match e.status() {
-                    Some(code) => Self::Error(Some(code.as_u16())),
-                    None => Self::Error(None),
-                },
+                ErrorKind::RejectedStatusCode(code) => Self::Error(Some(code.as_u16())),
+                ErrorKind::ReadResponseBody(e) | ErrorKind::BuildRequestClient(e) => {
+                    match e.status() {
+                        Some(code) => Self::Error(Some(code.as_u16())),
+                        None => Self::Error(None),
+                    }
+                }
                 _ => Self::Error(None),
             },
         }
@@ -90,8 +91,8 @@ impl From<&Status> for CacheStatus {
 
 #[cfg(test)]
 mod tests {
-    use serde::de::value::{BorrowedStrDeserializer, Error as DeserializerError};
     use serde::Deserialize;
+    use serde::de::value::{BorrowedStrDeserializer, Error as DeserializerError};
 
     use crate::CacheStatus;
 

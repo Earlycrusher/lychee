@@ -197,6 +197,14 @@ impl LinkExtractor {
                     return;
                 }
             }
+            // Skip disabled stylesheets
+            // Ref: https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement/disabled
+            if self.current_attribute_name == "disabled"
+                || self.current_attributes.contains_key("disabled")
+            {
+                self.current_attributes.clear();
+                return;
+            }
         }
 
         let new_urls = self
@@ -279,13 +287,11 @@ impl Emitter for &mut LinkExtractor {
     fn emit_current_tag(&mut self) -> Option<State> {
         self.flush_links();
 
-        let next_state = if self.current_element.is_closing {
+        if self.current_element.is_closing {
             None
         } else {
             html5gum::naive_next_state(self.current_element.name.as_bytes())
-        };
-
-        next_state
+        }
     }
 
     fn emit_current_doctype(&mut self) {}
@@ -508,6 +514,22 @@ mod tests {
         <script>
         var foo = "https://example.com";
         </script>
+        <a href="https://example.org">i'm fine</a>
+        "#;
+        let expected = vec![RawUri {
+            text: "https://example.org".to_string(),
+            element: Some("a".to_string()),
+            attribute: Some("href".to_string()),
+        }];
+        let uris = extract_html(input, false);
+        assert_eq!(uris, expected);
+    }
+
+    #[test]
+    fn test_exclude_disabled_stylesheet() {
+        let input = r#"
+        <link rel="stylesheet" href="https://disabled.com" disabled>
+        <link rel="stylesheet" href="https://disabled.com" disabled="disabled">
         <a href="https://example.org">i'm fine</a>
         "#;
         let expected = vec![RawUri {

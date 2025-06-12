@@ -50,6 +50,8 @@
 #[cfg(doctest)]
 doc_comment::doctest!("../../README.md");
 
+/// Check online archives to try and restore broken links
+pub mod archive;
 mod basic_auth;
 pub mod chain;
 mod checker;
@@ -90,15 +92,15 @@ pub use crate::{
     chain::{ChainResult, Handler},
     // Constants get exposed so that the CLI can use the same defaults as the library
     client::{
-        check, Client, ClientBuilder, DEFAULT_MAX_REDIRECTS, DEFAULT_MAX_RETRIES,
-        DEFAULT_RETRY_WAIT_TIME_SECS, DEFAULT_TIMEOUT_SECS, DEFAULT_USER_AGENT,
+        Client, ClientBuilder, DEFAULT_MAX_REDIRECTS, DEFAULT_MAX_RETRIES,
+        DEFAULT_RETRY_WAIT_TIME_SECS, DEFAULT_TIMEOUT_SECS, DEFAULT_USER_AGENT, check,
     },
     collector::Collector,
     filter::{Excludes, Filter, Includes},
     types::{
-        uri::valid::Uri, AcceptRange, AcceptRangeError, Base, BasicAuthCredentials,
-        BasicAuthSelector, CacheStatus, CookieJar, ErrorKind, FileExtensions, FileType, Input,
-        InputContent, InputSource, Request, Response, ResponseBody, Result, Status,
-        StatusCodeExcluder, StatusCodeSelector,
+        AcceptRange, AcceptRangeError, Base, BasicAuthCredentials, BasicAuthSelector, CacheStatus,
+        CookieJar, ErrorKind, FileExtensions, FileType, Input, InputContent, InputSource, Request,
+        Response, ResponseBody, Result, Status, StatusCodeExcluder, StatusCodeSelector,
+        uri::valid::Uri,
     },
 };
